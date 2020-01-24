@@ -1,0 +1,11 @@
+# Python Stuff
+*.pyc
+*~
+__pycache__
+.virenv*/
+
+# Editors
+.vscode
+
+# Generic Stuff
+trash
