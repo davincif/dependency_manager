@@ -9,3 +9,6 @@ __pycache__
 
 # Generic Stuff
 trash
+
+# Dependency Manager Stuff
+dmtree.json
