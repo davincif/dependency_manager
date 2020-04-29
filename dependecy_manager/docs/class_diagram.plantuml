@@ -1,0 +1,11 @@
+# PlantUML Editor
+
+@startuml
+
+class Dependecy_Manager {
+	init()
+	install(dev)
+	install_package(dev)
+}
+
+@enduml

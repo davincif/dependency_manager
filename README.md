@@ -1,3 +1,8 @@
+<!--
+to installl a package from a local path
+pip install -e PATH
+-->
+
 # Dependency Manager
 [![current](https://img.shields.io/badge/version-1.0.0--alpha-brightgreen.svg)](https://pypi.org/project/simplestRPC/) :green_heart:
 [![license](https://img.shields.io/badge/license-zlib-brightgreen.svg)](https://www.zlib.net/zlib_license.html)
