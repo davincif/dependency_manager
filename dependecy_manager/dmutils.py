@@ -28,14 +28,15 @@ def getpackinfo(package_name: str) -> Dict[str, str]:
 def listpacks() -> [str, str]:
 	proc = subprocess.Popen(['pip', 'freeze'], stdout=subprocess.PIPE)
 	lines = proc.stdout.read().decode('utf8')
-	lines = list(
-				filter(
-					lambda inf: not not inf[0],
-					map(
-						lambda inf: inf.split('=='),
-						lines.split('\n')
-						)
-					)
-				)
+	lines = list(filter(
+		lambda inf: inf[0],
+		map(
+			lambda inf: list(map(
+				lambda x: x.lower().strip(),
+				inf.split('==')
+				)),
+			lines.split('\n')
+		)
+	))
 
 	return lines

@@ -11,3 +11,6 @@ __pycache__
 trash
 
 # Dependency Manager Stuff
+dependecy_manager/*dmtree.json
+dependecy_manager/*requirements.txt
+dependecy_manager/*dev_requirements.txt
