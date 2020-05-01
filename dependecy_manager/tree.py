@@ -3,272 +3,436 @@ import json
 
 import dmutils
 import utils
+from dmexceptions import TreeNotInitilized
 
 
-__tree = {}
-tree_file_name = "dmtree.json"
-inited = False
-req_file_name = 'requirements.txt'
-dev_req_file_name = 'dev_requirements.txt'
+class DMTree:
+	__root = {}
+	prefix = './'
+	tree_file_name = "dmtree.json"
+	req_file_name = 'requirements.txt'
+	dev_req_file_name = 'dev_requirements.txt'
 
 
-# Public Functions
-def init():
-	global __tree
-	global tree_file_name
-	global inited
-	global req_file_name
-	global dev_req_file_name
+	# Magic Methods
+	def __init__(self, prefix: str=None, req_file_name: str=None, dev_req_file_name: str=None):
+		"""
+		Inilialize tree class, but does not craete loas the file tree.
 
-	# craete tree file
-	tree_file_name = os.path.join('./', tree_file_name)
-	if not os.path.exists(tree_file_name):
-		with open(tree_file_name, 'w') as tree_file:
-			tree_file.write(json.dumps({}))
+		:param prefix: where the tree shall be mounted, default './' (the current directory).
+		:type prefix: str
+		:param req_file_name: the pypi requirements file for production, default 'requirements.txt'.
+		:type req_file_name: str
+		:param dev_req_file_name: the pypi requirements file for development, default 'dev_requirements.txt'.
+		:type dev_req_file_name: str
+		"""
+		# setting attributes
+		if prefix is not None:
+			self.prefix = prefix
+		if req_file_name is not None:
+			self.req_file_name = req_file_name
+		if dev_req_file_name is not None:
+			self.dev_req_file_name = dev_req_file_name
 
-	# update requirements' file name
-	req_file_name = os.path.join('./', req_file_name)
-	dev_req_file_name = os.path.join('./', dev_req_file_name)
+		# craete tree file
+		self.tree_file_name = os.path.join(self.prefix, self.tree_file_name)
+		if not os.path.exists(self.tree_file_name):
+			with open(self.tree_file_name, 'w') as tree_file:
+				tree_file.write(json.dumps({}))
 
-	inited = True
+		# update requirements' file name
+		self.req_file_name = os.path.join(self.prefix, self.req_file_name)
+		self.dev_req_file_name = os.path.join(self.prefix, self.dev_req_file_name)
 
-def load_tree() -> dict:
-	global __tree
-	global tree_file_name
-	global inited
 
-	# check existense and initialization
-	if not inited:
-		raise(Exception("tree module note initialized before use"))
-	elif not os.path.exists(tree_file_name):
-		raise(Exception("tree module note initialized before use"))
-	with open(tree_file_name, 'r') as tree_file:
-		__tree = json.loads(tree_file.read())
+	# Public Methods
+	def load(self) -> None:
+		"""
+		Load file tree.
 
-	return __tree
+		:raises: FileNotFoundError.
+		"""
+		# check existense and initialization
+		if not os.path.exists(self.tree_file_name):
+			raise FileNotFoundError("tree was never initialized and saved before.")
+		with open(self.tree_file_name, 'r') as tree_file:
+			self.__root = json.loads(tree_file.read())
 
-def save_tree() -> dict:
-	global __tree
+	def save(self) -> dict:
+		"""
+		Save the tree structure to the file 'dmtree.json' at the directory specified in 'prefix'.
 
-	# check existense and initialization
-	if not inited:
-		raise(Exception("tree module note initialized before use"))
-	elif not os.path.exists(tree_file_name):
-		raise(Exception("tree module note initialized before use"))
-	with open(tree_file_name, 'w') as tree_file:
-		tree_file.write(json.dumps(__tree, indent='\t'))
+		:raises: TreeNotInitilized, FileNotFoundError, Exception.
+		"""
+		# check existense and initialization
+		if not os.path.exists(self.tree_file_name):
+			raise TreeNotInitilized("have you loaded of crated the tree? try 'load' or 'raise_tree' functions")
 
-	return __tree
+		# save
+		try:
+			with open(self.tree_file_name, 'w') as tree_file:
+				tree_file.write(json.dumps(self.__root, indent='\t'))
+		except FileNotFoundError as exp:
+			raise FileNotFoundError(str(exp) + ". Try creatring the tree with 'raise_tree' fucntion first")
+		except Exception as exp:
+			raise Exception("unexpetec error: " + str(exp))
 
-def raise_tree(save=True):
-	global __tree
+	def save_all(self):
+		"""
+		Save the tree file, and the dev and prod requirements files.
 
-	tree = {
-		'development': {},
-		'production': {},
-		'packs': {},
-	}
+		:raises: TreeNotInitilized, FileNotFoundError, Exception.
+		"""
+		self.save()
+		self.export(dev=True)
+		self.export(dev=False)
 
-	# puting all instaled pack in the tree
-	pkglist = list(map(lambda x: x[0], dmutils.listpacks()))
-	for pkg in pkglist:
-		pkginfo = dmutils.getpackinfo(pkg)
-
-		# add pack to tree
-		tree['packs'][pkginfo['name']] = {
-			'version': pkginfo['version'],
-			'requires': pkginfo['requires'],
-			'required-by': pkginfo['required-by'],
+	def raise_tree(self, save=True):
+		tree = {
+			'development': [],
+			'production': [],
+			'packs': {},
 		}
 
-		# check if package requires itself
-		toremove = []
-		for requires in tree['packs'][pkginfo['name']]['requires']:
-			if requires == pkginfo['name']:
-				toremove.append(requires)
-		if toremove:
-			utils.list_remove_list(tree['packs'][pkginfo['name']]['requires'], toremove)
+		# puting all instaled pack in the tree
+		pkglist = list(map(lambda x: x[0], dmutils.listpacks()))
+		for pkg in pkglist:
+			pkginfo = dmutils.getpackinfo(pkg)
 
-	# update global tree
-	__tree = tree
+			# add pack to tree
+			self.__insertpack(pkginfo['name'], pkginfo['version'], pkginfo['requires'], pkginfo['required-by'], False)
 
-	# creating dependecy tree
-	add_dependencies(pkglist)
+			# check if package requires itself
+			toremove = []
+			for requires in tree['packs'][pkginfo['name']]['requires']:
+				if requires == pkginfo['name']:
+					toremove.append(requires)
+			if toremove:
+				utils.list_remove_list(tree['packs'][pkginfo['name']]['requires'], toremove)
 
-	# save tree
-	if save:
-		save_tree()
+		# add as production
+		tree['production'] = pkglist
 
-	return __tree
+		# update global tree
+		self.__root = tree
 
-def add_dependencies(packlist: list, dev: bool=False):
-	global __tree
+		# save tree
+		if save:
+			self.save()
 
-	# choose right tree to add
-	tree2add = None
-	if dev:
-		tree2add = __tree['development']
-	else:
-		tree2add = __tree['production']
+	def export(self, dev: bool=False, reload_tree: bool=False):
+		"""
+		Export to a requirement file all the dev or prod (whichever is chosen) dependencies.
+		This is important to maintain compatibility with project that does not used this dependency manager.
+		So all dependencies can be installed by using only pip.
+		PS.: this function will try to load the tree in case it's not loaded. And of course will fail is the
+		it was never created and saved.
 
-	# insert dependencies
-	packlist = packlist.copy()
-	index = 0
-	while index < len(packlist):
-		pkg = packlist[index]
+		:param dev: True export the development tree, False for the production.
+		:type dev: bool
+		:param reload_tree: force reload tree.
+		:type reload_tree: bool
 
-		# check if pack was already inserted in tree
-		for requires in __tree['packs'][pkg]['requires']:
-			if requires in tree2add:
-				# remove from root, and add as a leaf
-				tree2add[pkg] = __tree['packs'][pkg].copy()
-				tree2add[pkg]['dependencies'] = {}
-				tree2add[pkg]['dependencies'][requires] = tree2add[requires]
-				del tree2add[requires]
+		:raises: FileNotFoundError, Exception
+		"""
+		# load tree if needed
+		if reload_tree or not self.__root:
+			self.load_tree()
 
-		# add dependency
-		tree2add[pkg] = __tree['packs'][pkg].copy()
+		# choose right tree to add
+		tree2add = None
+		if dev:
+			tree2add = self.__root['development']
+		else:
+			tree2add = self.__root['production']
 
-		# add depedency tree
-		if len(tree2add[pkg]['requires']) > 0:
-			for_removal = __add_dependency_recursively(tree2add[pkg])
+		# save requirements files
+		self.__sort_dep()
+		dependencies = []
+		for dep in tree2add:
+			dependencies.append((dep, self.__root['packs'][dep]['version']))
 
-			# remove already added depedency from list
-			utils.list_remove_list(packlist, for_removal)
-
-		# updating index
-		try:
-			index = packlist.index(pkg)
-		except Exception as exp:
-			pass
-		finally:
-			# that shall never happen
-			index += 1
-
-def export_tree(dev: bool=False, reload_tree=False, save=True) -> list:
-	global __tree
-	global req_file_name
-	global dev_req_file_name
-
-	# load tree if needed
-	if reload_tree or not __tree:
-		load_tree()
-
-	# choose right tree to add
-	tree2add = None
-	if dev:
-		tree2add = __tree['development']
-	else:
-		tree2add = __tree['production']
-
-	dependencies = []
-	for pack in tree2add:
-		dependencies.append((pack, tree2add[pack]['version']))
-		dependencies += __export_tree(tree2add[pack])
-	dependencies = utils.list_rm_repetition(dependencies)
-
-	# save requirements files
-	if save:
 		req_str = "\n".join(map(lambda t: "{}={}".format(t[0], t[1]), dependencies))
 
 		if dev:
-			with open(dev_req_file_name, 'w') as req_file:
+			with open(self.dev_req_file_name, 'w') as req_file:
 				req_file.write(req_str)
 		else:
-			with open(req_file_name, 'w') as req_file:
+			with open(self.req_file_name, 'w') as req_file:
 				req_file.write(req_str)
 
-	return dependencies
+	def install_tree(self, dev: bool=False):
+		"""
+		Install all dependencies of the chosen tree.
 
-def install_pack(packname: str, dev: bool=False):
-	global __tree
+		:param dev: False to only install production dependencies. True to install development too.
+		:type dev: bool
+		"""
+		# load tree is needed
+		if not self.__root:
+			self.load_tree()
 
-	# install
-	dmutils.intallpack(packname)
+		# install prod
+		for dep in self.__root['production']:
+			dmutils.intallpack("{}=={}".format(dep, self.__root['packs'][dep]['version']), nodeps=True)
 
-	# update pack tree
-	pkinfo = dmutils.getpackinfo(packname)
-	__tree['packs'][pkinfo['name']] = {
-		'version': pkinfo['version'],
-		'requires': pkinfo['requires'],
-		'required-by': pkinfo['required-by'],
-	}
-	roots = []
-	for req in pkinfo['requires']:
-		reqinfo = dmutils.getpackinfo(req)
-		# check if dependency is already present and a same version was added
-		if req in __tree['packs']:
-			roots.append(req)
-			if __tree['packs'][req]['version'] == reqinfo['version']:
-				continue
+		# install dev
+		if dev:
+			for dep in self.__root['development']:
+				dmutils.intallpack("{}=={}".format(dep, self.__root['packs'][dep]['version']), nodeps=True)
 
-		# add dependency to pack tree
-		__tree['packs'][req] = {
-			'version': pkinfo['version'],
-			'requires': pkinfo['requires'],
-			'required-by': pkinfo['required-by'],
+	def install_pack(self, packname: str, version: str='', dev: bool=False):
+		"""
+		Install the requested pack and all its dependencies.
+
+		If the no version is provided, the newer version will be installed.
+		If the package and version request is already intalled, or the version
+		is alraedy the newest and no version was provided, an exception will rise.
+		If you with to change de dev or pord state of a pack, call 'move_dependency'.
+
+		:param packname: The package name.
+		:type packname: str
+		:param version: The package version.
+		:type version: str
+		:param dev: Where to install the pack, True for dev, False for prod.
+		:type dev: bool
+		"""
+		# check if dependency already exists
+		if self.__root['packs'][packname]:
+			# check if and specific versions is required
+			if version:
+				# check if the version already installed
+				if version == self.__root['packs'][packname]['version']:
+					raise Exception("package already installed")
+			else:
+				# check if there is newer versions
+				version = self.__root['packs'][packname]['version']
+				versions = dmutils.getversions(packname)
+				if versions.index('1.0.0') < len(versions) - 1:
+					# install newer version
+					version = versions[-1]
+				else:
+					raise Exception("newest version already installed")
+
+			# check if need to change dev to prod vice versa
+			if (dev and not self.__root['packs'][packname]['dev']) or (not dev and self.__root['packs'][packname]['dev']):
+				self.move_dependency(packname)
+
+		# install pack
+		dmutils.intallpack(packname, version)
+
+		# get info
+		packinfo = dmutils.getpackinfo(packname)
+		self.__insertpack(packname, packinfo['version'], packinfo['requires'], packinfo['required-by'], dev)
+		self.make_head(packname)
+
+		# add dependencies
+		if self.__root['packs'][packname]['requires']:
+			self.__add_dependencies(packname, dev=dev)
+
+		# update in dev or prod (whoever was choosen)
+
+		# save
+		self.save_all()
+
+	def uninstall(self, packname: str):
+		"""
+		Uninstall the package and all it's dependencies! Taking care to do not delete a
+		package requested by another pack. This fucntion also moves packs from dev to prod
+		in case it's needed after the uninstation.
+
+		:param packname: The package name.
+		:type packname: str
+		"""
+		# get remotion tree
+		remotion_tree = self.get_dependency_list(packname)
+
+		# check if no other packs needs any pack in the romotion tree
+		# and remove it from the remotion tree
+		pack_saved = {}
+		for pack in self.__root['packs']:
+			if pack not in remotion_tree:
+				for dep in self.__root['packs'][pack]['requires']:
+					if dep in remotion_tree:
+						remotion_tree.remove(dep)
+
+						# store update dev/prod status
+						if dep in pack_saved:
+							if pack_saved[dep] and not self.__root['packs'][pack]['dev']:
+								pack_saved[dep] = False
+						else:
+							pack_saved[dep] = self.__root['packs'][pack]['dev']
+
+		# update dev/prod status
+		for pack in pack_saved:
+			self.__root['packs'][pack]['dev'] = pack_saved[pack]
+
+		# uninstall it
+		for pack in remotion_tree:
+			dmutils.unintallpack(pack)
+
+		# remove all uninstalled packs from the __root
+		for pack in remotion_tree:
+			del self.__root['packs'][pack]
+
+		# upate and save dependency list
+		self.save_all()
+
+	def move_dependency(self, packname: str):
+		"""
+		Move the given dependency, if it is dev, move to prod, vice versa.
+		OBS.: this function saves the tree and the requiments files in the end.
+
+		:param packname: The package name.
+		:type packname: str
+		"""
+		dev = None
+		change_to = ''
+		change_from = ''
+
+		# choose change direction
+		if self.__root['packs'][packname]['dev'] and self.__root['packs'][packname]['prod']:
+			raise Exception("This packaged bellowing to prod and dev")
+		if self.__root['packs'][packname]['dev']:
+			change_from = 'development'
+			change_to = 'production'
+			dev = False
+		elif self.__root['packs'][packname]['prod']:
+			change_from = 'production'
+			change_to = 'development'
+			dev = True
+
+		# check dev/prod consistency
+		# if I'm going dev, no father should be prod.
+		sontree = self.get_dependency_list(packname)
+		if dev:
+			fathertree = self.get_ascendency_list(packname)
+			for father in fathertree:
+				if not self.__root['packs'][father]['dev']:
+					raise Exception("Some other package in the production need this package!")
+
+			# update dev/prod condition
+			self.__root['packs'][packname]['dev'] = dev
+
+			# check if any son needs to be updated
+			for son in sontree:
+				change = True
+				for required in self.__root['packs'][son]['required_by']:
+					if not self.__root['packs'][required]['dev']:
+						change = False
+						break
+				if change:
+					self.__root['packs'][son]['dev'] = True
+
+		# If I'm going prod, no son should remains dev
+		else:
+			# move along all sons to prod too
+			for son in sontree:
+				self.__root['packs'][son]['dev'] = False
+
+		# save
+		self.save_all()
+
+	def get_dependency_list(self, packname: str) -> list:
+		"""
+		:returns: A list with all packages in which the given pack is dependent.
+		:rtype: list
+		"""
+		deplist = [packname]
+		for dep in self.__root['packs'][packname]['requires']:
+			deplist.append(self.get_dependency_list(dep))
+
+		return deplist
+
+	def get_ascendency_list(self, packname: str) -> list:
+		"""
+		:returns: A list with all packages dependent on the given pack.
+		:rtype: list
+		"""
+		deplist = [packname]
+		for dep in self.__root['packs'][packname]['required-by']:
+			deplist.append(self.get_ascendency_list(dep))
+
+		return deplist
+
+	def make_head(self, packname: str, makehead: bool=True) -> bool:
+		"""
+		Transforme the given package in a head package
+		:returns: the previus head condition of the given package
+		:rtype: bool
+		"""
+		prev = self.__root['packs'][packname]['head']
+		self.__root['packs'][packname]['head'] = makehead
+
+		return prev
+
+
+	# Private Methods
+	def __add_dependencies(self, pack: str, dev: bool=False):
+		"""
+		Recursively add to the tree all the dependence of given package.
+
+		:param dev: Where to install the pack, True for dev, False for prod.
+		:type dev: bool
+		"""
+		# add pack dependency
+		for req in self.__root['packs'][pack]['requires']:
+			# check if dependency already exists
+			if req in self.__root['packs'][pack]:
+				# treat dev/prod dependency
+				if not self.__root['packs'][pack]['dev'] and self.__root['packs'][pack]['dev']:
+					self.__root['packs'][pack]['dev'] = False
+			else:
+				# insert pack
+				packinfo = dmutils.getpackinfo(req)
+				self.__insertpack(req, packinfo['version'], packinfo['requires'], packinfo['required-by'], dev, not dev)
+
+				# add depedencies of the dependency
+				if self.__root['packs'][req]['requires']:
+					self.__add_dependencies(req, dev=dev)
+
+	def __insertpack(self, name: str, version: str, requires: list, required_by: list, dev: bool):
+		"""
+		Install the given pack
+
+		:param name: The package name.
+		:type name: str
+		:param version: The package version.
+		:type version: str
+		:param requires: The names of required package by the installed package.
+		:type requires: list
+		:param required_by: The names of the package whos requires the installed package.
+		:type required_by: list
+		:param dev: if the package is a development or production package.
+		:type dev: bool
+		"""
+		self.__root['packs'][name] = {
+			'head': True if not required_by else False,
+			'version': version,
+			'requires': requires,
+			'required-by': required_by,
+			'dev': dev,
 		}
 
-	# add dependency
-	add_dependencies([pkinfo['name']] + pkinfo['requires'], dev=dev)
-
-	# choose right tree to add
-	tree2add = None
-	if dev:
-		tree2add = __tree['development']
-	else:
-		tree2add = __tree['production']
-
-	# re add as root
-	for pack in roots:
-		tree2add[pack] = __tree['packs'][pack]
-
-	# save
-	save_tree()
-	export_tree(dev=dev, save=True)
-
-def uninstall_pack(dev: bool=False, remove_tree: bool=True):
-	pass
-
-# Private Functions
-def __remove_tree(pack_name: str):
-	pass
-
-def __export_tree(root: dict):
-	dependencies = []
-
-	# check if there are dependencies
-	if 'dependencies' not in root:
-		return dependencies
-
-	# get in depth dependencies
-	for dep in root['dependencies']:
-		dependencies.append((dep, root['dependencies'][dep]['version']))
-		dependencies += __export_tree(root['dependencies'][dep])
-
-	return dependencies
-
-def __add_dependency_recursively(tree: dict, rmpacks: list=[]):
-	global __tree
-
-	# update packs to be removed
-	rmpacks = utils.list_rm_repetition(rmpacks + tree['requires'])
-
-	# add inner dependencies
-	for pkg in tree['requires']:
-		if pkg in __tree['packs']:
-			if 'dependencies' not in tree:
-				tree['dependencies'] = {}
-			elif pkg in tree['dependencies']:
-				continue
-
-			tree['dependencies'][pkg] = __tree['packs'][pkg].copy()
-			if len(tree['dependencies'][pkg]['requires']) > 0:
-				toremove = __add_dependency_recursively(tree['dependencies'][pkg], rmpacks)
-				toremove = utils.list_rm_repetition(toremove + toremove)
-
-	return rmpacks
+	def __sort_dep(self):
+		"""
+		Walks through the tree separating dev and prod dependencies. You must call this funciton
+		before exporting the tree.
+		"""
+		self.__root['development'] = []
+		self.__root['production'] = []
+		for dep in self._root['packs']:
+			if self._root['packs'][dep]['dev']:
+				self.__root['development'].append(dep)
+			else:
+				self.__root['production'].append(dep)
 
 
-# self init
-init()
+	# Getters and Setters
+	@property
+	def root(self):
+		return self.__root.copy()
+
+	@root.setter
+	def root(self, setto):
+		raise Exception("Do not set this property by yourself! Use the interface")

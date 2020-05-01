@@ -1,8 +1,10 @@
-import tree
+from tree import DMTree
 
 if __name__ == "__main__":
-	# tree.raise_tree()
-	# print('\n\n>', tree.export_tree())
+	tree = DMTree()
 
-	tree.load_tree()
-	tree.install_pack('simplestRPC')
+	tree.raise_tree()
+	tree.export()
+
+	# tree.load()
+	# tree.export()
