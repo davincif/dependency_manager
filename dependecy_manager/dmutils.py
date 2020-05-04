@@ -2,7 +2,17 @@ import subprocess
 from typing import Dict
 
 
-def intallpack(package_name: str, version: str='', nodeps:bool=False) -> None:
+def intallpack(package_name: str, version: str='', nodeps: bool=False) -> None:
+	"""
+	Install requested pack and version, if no version is provided, install latested.
+
+	:param package_name: Name of the package to be installed.
+	:type package_name: str
+	:param version: Version to be installed. leave empty for latest
+	:type version: str
+	:param nodeps: Install dependency tree if False
+	:type nodeps: bool
+	"""
 	# construct package name with version if needed
 	installstr = package_name if not version else "{}=={}".format(package_name, version)
 
@@ -16,9 +26,24 @@ def intallpack(package_name: str, version: str='', nodeps:bool=False) -> None:
 	resp = subprocess.call(command)
 
 def unintallpack(package_name: str) -> None:
-	resp = subprocess.call(['pip', 'uninstall', package_name])
+	"""
+	Uninstall requested package. Just like 'pip uninstall'.
+
+	:param package_name: Name of the package to be uninstalled.
+	:type package_name: str
+	"""
+	resp = subprocess.call(['pip', 'uninstall', '-y', package_name])
 
 def getpackinfo(package_name: str) -> Dict[str, str]:
+	"""
+	Get all informations provided by 'pip show' for the given package.
+
+	:param package_name: Name of the package to get information from.
+	:type package_name: str
+
+	:returns: All information available about 'package_name'.
+	:rtype: Dict[str, str]
+	"""
 	# execute command
 	proc = subprocess.Popen(['pip', 'show', package_name], stdout=subprocess.PIPE)
 	proc.wait()
@@ -45,6 +70,12 @@ def getpackinfo(package_name: str) -> Dict[str, str]:
 	return info
 
 def listpacks() -> [str, str]:
+	"""
+	List all installed pack in this environment.
+
+	:returns: A list of lists containing [package_name, version] of each available pack.
+	:rtype: [str, str]
+	"""
 	# execute command
 	proc = subprocess.Popen(['pip', 'freeze'], stdout=subprocess.PIPE)
 	proc.wait()
@@ -65,6 +96,15 @@ def listpacks() -> [str, str]:
 	return lines
 
 def getversions(package_name: str) -> list:
+	"""
+	Show all versions of the requested package.
+
+	:param package_name: Name of the package to get information from.
+	:type package_name: str
+
+	:returns: List with all available versions for installation.
+	:rtype: lines[str]
+	"""
 	# execute command
 	proc = subprocess.Popen(['pip', 'install', package_name+'==CRASHME'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	proc.wait()
@@ -77,4 +117,4 @@ def getversions(package_name: str) -> list:
 	lines = lines[start:end].split(',')
 	lines = list(map(lambda x: x.strip(), lines))
 
-	return 'lines'
+	return lines

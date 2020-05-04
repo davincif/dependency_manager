@@ -3,7 +3,7 @@ import json
 
 import dmutils
 import utils
-from dmexceptions import TreeNotInitilized
+from dmexceptions import TreeNotInitilized, PackageNotOnTree
 
 
 class DMTree:
@@ -35,10 +35,10 @@ class DMTree:
 			self.dev_req_file_name = dev_req_file_name
 
 		# craete tree file
-		self.tree_file_name = os.path.join(self.prefix, self.tree_file_name)
-		if not os.path.exists(self.tree_file_name):
-			with open(self.tree_file_name, 'w') as tree_file:
-				tree_file.write(json.dumps({}))
+		# self.tree_file_name = os.path.join(self.prefix, self.tree_file_name)
+		# if not os.path.exists(self.tree_file_name):
+		# 	with open(self.tree_file_name, 'w') as tree_file:
+		# 		tree_file.write(json.dumps({}))
 
 		# update requirements' file name
 		self.req_file_name = os.path.join(self.prefix, self.req_file_name)
@@ -65,8 +65,8 @@ class DMTree:
 		:raises: TreeNotInitilized, FileNotFoundError, Exception.
 		"""
 		# check existense and initialization
-		if not os.path.exists(self.tree_file_name):
-			raise TreeNotInitilized("have you loaded of crated the tree? try 'load' or 'raise_tree' functions")
+		# if not os.path.exists(self.tree_file_name):
+		# 	raise TreeNotInitilized("have you loaded of crated the tree? try 'load' or 'raise_tree' functions")
 
 		# save
 		try:
@@ -88,7 +88,7 @@ class DMTree:
 		self.export(dev=False)
 
 	def raise_tree(self, save=True):
-		tree = {
+		self.__root = {
 			'development': [],
 			'production': [],
 			'packs': {},
@@ -104,17 +104,14 @@ class DMTree:
 
 			# check if package requires itself
 			toremove = []
-			for requires in tree['packs'][pkginfo['name']]['requires']:
+			for requires in self.__root['packs'][pkginfo['name']]['requires']:
 				if requires == pkginfo['name']:
 					toremove.append(requires)
 			if toremove:
-				utils.list_remove_list(tree['packs'][pkginfo['name']]['requires'], toremove)
+				utils.list_remove_list(self.__root['packs'][pkginfo['name']]['requires'], toremove)
 
 		# add as production
-		tree['production'] = pkglist
-
-		# update global tree
-		self.__root = tree
+		self.__root['production'] = pkglist
 
 		# save tree
 		if save:
@@ -140,6 +137,7 @@ class DMTree:
 			self.load_tree()
 
 		# choose right tree to add
+		self.__sort_dep()
 		tree2add = None
 		if dev:
 			tree2add = self.__root['development']
@@ -147,7 +145,6 @@ class DMTree:
 			tree2add = self.__root['production']
 
 		# save requirements files
-		self.__sort_dep()
 		dependencies = []
 		for dep in tree2add:
 			dependencies.append((dep, self.__root['packs'][dep]['version']))
@@ -198,7 +195,7 @@ class DMTree:
 		:type dev: bool
 		"""
 		# check if dependency already exists
-		if self.__root['packs'][packname]:
+		if 'packname' in self.__root['packs']:
 			# check if and specific versions is required
 			if version:
 				# check if the version already installed
@@ -233,6 +230,7 @@ class DMTree:
 		# update in dev or prod (whoever was choosen)
 
 		# save
+		self.__sort_dep()
 		self.save_all()
 
 	def uninstall(self, packname: str):
@@ -262,6 +260,8 @@ class DMTree:
 								pack_saved[dep] = False
 						else:
 							pack_saved[dep] = self.__root['packs'][pack]['dev']
+			elif self.__root['packs'][pack]['head'] and pack != packname:
+					remotion_tree.remove(pack)
 
 		# update dev/prod status
 		for pack in pack_saved:
@@ -276,6 +276,7 @@ class DMTree:
 			del self.__root['packs'][pack]
 
 		# upate and save dependency list
+		self.__sort_dep()
 		self.save_all()
 
 	def move_dependency(self, packname: str):
@@ -290,14 +291,16 @@ class DMTree:
 		change_to = ''
 		change_from = ''
 
+		# check existency
+		if packname not in self.__root['packs']:
+			raise PackageNotOnTree("{} does not exists".format(packname))
+
 		# choose change direction
-		if self.__root['packs'][packname]['dev'] and self.__root['packs'][packname]['prod']:
-			raise Exception("This packaged bellowing to prod and dev")
 		if self.__root['packs'][packname]['dev']:
 			change_from = 'development'
 			change_to = 'production'
 			dev = False
-		elif self.__root['packs'][packname]['prod']:
+		else:
 			change_from = 'production'
 			change_to = 'development'
 			dev = True
@@ -305,19 +308,27 @@ class DMTree:
 		# check dev/prod consistency
 		# if I'm going dev, no father should be prod.
 		sontree = self.get_dependency_list(packname)
+		sontree.remove(packname)
 		if dev:
 			fathertree = self.get_ascendency_list(packname)
+			fathertree.remove(packname)
 			for father in fathertree:
+				# cant move requested pack
 				if not self.__root['packs'][father]['dev']:
 					raise Exception("Some other package in the production need this package!")
+
 
 			# update dev/prod condition
 			self.__root['packs'][packname]['dev'] = dev
 
 			# check if any son needs to be updated
 			for son in sontree:
+				# do not update heads
+				if self.__root['packs'][son]['head']:
+					continue
+
 				change = True
-				for required in self.__root['packs'][son]['required_by']:
+				for required in self.__root['packs'][son]['required-by']:
 					if not self.__root['packs'][required]['dev']:
 						change = False
 						break
@@ -331,6 +342,7 @@ class DMTree:
 				self.__root['packs'][son]['dev'] = False
 
 		# save
+		self.__sort_dep()
 		self.save_all()
 
 	def get_dependency_list(self, packname: str) -> list:
@@ -340,7 +352,7 @@ class DMTree:
 		"""
 		deplist = [packname]
 		for dep in self.__root['packs'][packname]['requires']:
-			deplist.append(self.get_dependency_list(dep))
+			deplist += self.get_dependency_list(dep)
 
 		return deplist
 
@@ -351,20 +363,53 @@ class DMTree:
 		"""
 		deplist = [packname]
 		for dep in self.__root['packs'][packname]['required-by']:
-			deplist.append(self.get_ascendency_list(dep))
+			deplist += self.get_ascendency_list(dep)
 
 		return deplist
 
-	def make_head(self, packname: str, makehead: bool=True) -> bool:
+	def make_head(self, packname: str, unhead: bool=False) -> bool:
 		"""
 		Transforme the given package in a head package
 		:returns: the previus head condition of the given package
 		:rtype: bool
 		"""
 		prev = self.__root['packs'][packname]['head']
-		self.__root['packs'][packname]['head'] = makehead
+		self.__root['packs'][packname]['head'] = not unhead
+
+		# save updated tree
+		self.save()
 
 		return prev
+
+	def getinfo(self, packname: str, complete: bool=False) -> dict:
+		"""
+		get info about the requested pack.
+
+		:param packname: The package name.
+		:type packname: str
+		:param complete: if Flase, returns only the main information, present in dmtree.json.
+		If True, also get informatin from pip.
+		:type complete: bool
+
+		:returns: all information requested.
+		:rtype: dict
+		"""
+		info = None
+
+		if packname not in self.__root['packs']:
+			info = {
+				"NOT INSTALLED": "PACKAGE NOT INSTALLED"
+			}
+			info['available-versions'] = dmutils.getversions(packname)
+		elif complete:
+			info = dmutils.getpackinfo(packname)
+			info['head'] = self.__root['packs'][packname]['head']
+			info['dev'] = self.__root['packs'][packname]['dev']
+			info['available-versions'] = dmutils.getversions(packname)
+		else:
+			info = self.__root['packs'][packname].copy()
+
+		return info
 
 
 	# Private Methods
@@ -385,7 +430,7 @@ class DMTree:
 			else:
 				# insert pack
 				packinfo = dmutils.getpackinfo(req)
-				self.__insertpack(req, packinfo['version'], packinfo['requires'], packinfo['required-by'], dev, not dev)
+				self.__insertpack(req, packinfo['version'], packinfo['requires'], packinfo['required-by'], dev)
 
 				# add depedencies of the dependency
 				if self.__root['packs'][req]['requires']:
@@ -393,7 +438,7 @@ class DMTree:
 
 	def __insertpack(self, name: str, version: str, requires: list, required_by: list, dev: bool):
 		"""
-		Install the given pack
+		Insert the given pack into the tree.
 
 		:param name: The package name.
 		:type name: str
@@ -419,10 +464,10 @@ class DMTree:
 		Walks through the tree separating dev and prod dependencies. You must call this funciton
 		before exporting the tree.
 		"""
-		self.__root['development'] = []
-		self.__root['production'] = []
-		for dep in self._root['packs']:
-			if self._root['packs'][dep]['dev']:
+		self.__root['development'].clear()
+		self.__root['production'].clear()
+		for dep in self.__root['packs']:
+			if self.__root['packs'][dep]['dev']:
 				self.__root['development'].append(dep)
 			else:
 				self.__root['production'].append(dep)

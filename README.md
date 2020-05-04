@@ -1,6 +1,7 @@
 <!--
 to installl a package from a local path
 pip install -e PATH
+https://pythonhosted.org/an_example_pypi_project/sphinx.html
 -->
 
 # Dependency Manager
