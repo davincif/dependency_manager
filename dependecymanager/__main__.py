@@ -2,7 +2,7 @@ import pprint
 import sys
 import argparse
 
-from tree import DMTree
+from .tree import DMTree
 
 
 def make_parser(toparser: str) -> argparse.Namespace:

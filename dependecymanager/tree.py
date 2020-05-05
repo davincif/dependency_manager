@@ -1,9 +1,9 @@
 import os
 import json
 
-import dmutils
-import utils
-from dmexceptions import TreeNotInitilized, PackageNotOnTree
+from . import dmutils
+from . import utils
+from .dmexceptions import TreeNotInitilized, PackageNotOnTree
 
 
 class DMTree:
@@ -97,6 +97,8 @@ class DMTree:
 		# puting all instaled pack in the tree
 		pkglist = list(map(lambda x: x[0], dmutils.listpacks()))
 		for pkg in pkglist:
+			# treate in case the package is local
+			pkg = pkg.split(' ')[0].strip()
 			pkginfo = dmutils.getpackinfo(pkg)
 
 			# add pack to tree

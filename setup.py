@@ -34,7 +34,7 @@ setup(
 	# There are some restrictions on what makes a valid project name
 	# specification here:
 	# https://packaging.python.org/specifications/core-metadata/#name
-	name='dependency_manager',  # Required
+	name='dependencymanager',  # Required
 
 	# Versions should comply with PEP 440:
 	# https://www.python.org/dev/peps/pep-0440/
@@ -42,12 +42,12 @@ setup(
 	# For a discussion on single-sourcing the version across setup.py and the
 	# project code, see
 	# https://packaging.python.org/en/latest/single_source_version.html
-	version='1.0.0dev1',  # Required
+	version='1.0.0rc0',  # Required
 
 	# This is a one-line description or tagline of what your project does. This
 	# corresponds to the "Summary" metadata field:
 	# https://packaging.python.org/specifications/core-metadata/#summary
-	description='An easy way to manage dependecy tree and dev dependencies.',  # Optional
+	description='An easy way to manage development and procution dependecies.',  # Optional
 
 	# This is an optional longer description of your project that represents
 	# the body of text which users will see when they visit PyPI.
@@ -57,7 +57,7 @@ setup(
 	#
 	# This field corresponds to the "Description" metadata field:
 	# https://packaging.python.org/specifications/core-metadata/#description-optional
-	long_description='''User the Dependency Manager to install your package, it'll use pip under the covers and it will correctly separate your dependencies from its tree, also you're gonna be able to separate your development and production requirements''',  # Optional
+	long_description=long_description,  # Optional
 
 	# Denotes that our long_description is in Markdown; valid values are
 	# text/plain, text/x-rst, and text/markdown
@@ -69,7 +69,7 @@ setup(
 	#
 	# This field corresponds to the "Description-Content-Type" metadata field:
 	# https://packaging.python.org/specifications/core-metadata/#description-content-type-optional
-	long_description_content_type='text/plain',  # Optional (see note above)
+	long_description_content_type='text/markdown',  # Optional (see note above)
 
 	# This should be a valid link to your project's main homepage.
 	#
@@ -93,10 +93,11 @@ setup(
 		#   3 - Alpha
 		#   4 - Beta
 		#   5 - Production/Stable
-		'Development Status :: 1 - Planning',
+		'Development Status :: 5 - Production/Stable',
 
 		# Indicate who your project is intended for
 		'Intended Audience :: Developers',
+		'Topic :: Software Development',
 		'Topic :: Software Development :: Build Tools',
 
 		# Pick your license as you wish
@@ -104,13 +105,12 @@ setup(
 
 		# Specify the Python versions you support here. In particular, ensure
 		# that you indicate whether you support Python 2, Python 3 or both.
-		'Programming Language :: Python :: 3.5',
 		'Programming Language :: Python :: 3.6',
 		'Programming Language :: Python :: 3.7',
 		'Programming Language :: Python :: 3.8',
 	],
 
-	python_requires='>=3.5, <3.9',
+	python_requires='>=3.6',
 
 	# This field adds keywords for your project which will appear on the
 	# project page. What does your project relate to?
@@ -127,7 +127,7 @@ setup(
 	#
 	#   py_modules=["my_module"],
 	#
-	packages=find_packages(exclude=['contrib', 'docs', 'tests', '.vscode', '.virenv*', 'trash']),  # Required
+	packages=find_packages(exclude=['contrib', 'docs', 'tests', '.vscode', 'trash']),  # Required
 
 	# This field lists other packages that your project depends on to run.
 	# Any package you put here will be installed by pip when your project is

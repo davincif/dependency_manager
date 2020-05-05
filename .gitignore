@@ -5,12 +5,17 @@ __pycache__
 .virenv*/
 
 # Editors
-.vscode
+.vscode/
 
 # Generic Stuff
-trash
+trash/
 
 # Dependency Manager Stuff
 dependecy_manager/*dmtree.json
 dependecy_manager/*requirements.txt
 dependecy_manager/*dev_requirements.txt
+
+# pypi
+*.egg-info
+dist/
+build/
