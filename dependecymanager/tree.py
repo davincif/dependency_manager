@@ -187,12 +187,12 @@ class DMTree:
 
 		# install prod
 		for dep in self.__root['production']:
-			dmutils.intallpack("{}=={}".format(dep, self.__root['packs'][dep]['version']), nodeps=True)
+			dmutils.intallpack(dep, self.__root['packs'][dep]['version'], nodeps=True)
 
 		# install dev
 		if dev:
 			for dep in self.__root['development']:
-				dmutils.intallpack("{}=={}".format(dep, self.__root['packs'][dep]['version']), nodeps=True)
+				dmutils.intallpack(dep, self.__root['packs'][dep]['version'], nodeps=True)
 
 	def install_pack(self, packname: str, version: str='', dev: bool=False):
 		"""

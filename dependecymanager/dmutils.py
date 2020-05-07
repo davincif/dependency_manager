@@ -19,7 +19,7 @@ def intallpack(package_name: str, version: str='', nodeps: bool=False) -> None:
 	# construct command and flags
 	command = ['pip', 'install']
 	if nodeps:
-		command.append(['--no-deps'])
+		command.append('--no-deps')
 	command.append(installstr)
 
 	# execute command

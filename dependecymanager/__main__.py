@@ -7,7 +7,7 @@ from .tree import DMTree
 
 def make_parser(toparser: str) -> argparse.Namespace:
 	command = sys.argv[1]
-	namepace = None
+	namespace = None
 
 	if command == 'init':
 		parser = argparse.ArgumentParser(
@@ -15,7 +15,7 @@ def make_parser(toparser: str) -> argparse.Namespace:
 			 Or starts one from scratch."""
 		)
 
-		namepace = parser.parse_args(toparser[2:])
+		namespace = parser.parse_args(toparser[2:])
 	elif command == 'i' or command == 'install':
 		parser = argparse.ArgumentParser(
 			description="""Install the project.
@@ -44,18 +44,28 @@ def make_parser(toparser: str) -> argparse.Namespace:
 		)
 		parser.add_argument(
 			'-d', '--dev',
-			type=bool,
+			type=str,
 			dest='dev',
 			required=False,
-			default=False,
+			default='false',
 			nargs='?',
 			help="for a dev package do: --dev=True"
 		)
 
-		namepace = parser.parse_args(toparser[2:])
+		namespace = parser.parse_args(toparser[2:])
 
 		# arguments validation
-		assert namepace.name or not namepace.version, "-v/--version flag neededs -n/--name flag."
+		assert namespace.name or not namespace.version, "-v/--version flag neededs -n/--name flag."
+		assert namespace.dev, "-d/--dev flag must have a value! (true or false)."
+
+		# ATTENTION: this is only needed because in version 3.6.9 of python, the parser.add_argument
+		# has a bug with boolean arguments, not correctly attributing them to 'namespace'.
+		if namespace.dev.lower() == 'false':
+			namespace.dev = False
+		elif namespace.dev.lower() == 'true':
+			namespace.dev = True
+		else:
+			raise TypeError("-d/--dev flag must be boolean (true or false)")
 	elif command == 'u' or command == 'uninstall':
 		parser = argparse.ArgumentParser(
 			description="""
@@ -72,10 +82,10 @@ def make_parser(toparser: str) -> argparse.Namespace:
 			help="pack name: --name=my_pack_name"
 		)
 
-		namepace = parser.parse_args(toparser[2:])
+		namespace = parser.parse_args(toparser[2:])
 
 		# arguments validation
-		assert namepace.name, "-n/--name flag needed specification"
+		assert namespace.name, "-n/--name flag needed specification"
 	elif command == 'f' or command == 'info':
 		parser = argparse.ArgumentParser(description="Get info about the requested pack.")
 		parser.add_argument(
@@ -96,10 +106,10 @@ def make_parser(toparser: str) -> argparse.Namespace:
 			help="return me extra information about the package."
 		)
 
-		namepace = parser.parse_args(toparser[2:])
+		namespace = parser.parse_args(toparser[2:])
 
 		# arguments validation
-		assert namepace.name, "-n/--name flag needed specification"
+		assert namespace.name, "-n/--name flag needed specification"
 	elif command == 'm' or command == 'move':
 		parser = argparse.ArgumentParser(
 			description='Move package between environments, production for developer and vice versa.'
@@ -113,10 +123,10 @@ def make_parser(toparser: str) -> argparse.Namespace:
 			help="pack name: --name=my_pack_name"
 		)
 
-		namepace = parser.parse_args(toparser[2:])
+		namespace = parser.parse_args(toparser[2:])
 
 		# arguments validation
-		assert namepace.name, "-n/--name flag needed specification"
+		assert namespace.name, "-n/--name flag needed specification"
 	elif command == 'mh' or command == 'makehead':
 		parser = argparse.ArgumentParser(
 			description="""Make the given package head.
@@ -140,9 +150,9 @@ def make_parser(toparser: str) -> argparse.Namespace:
 			help="Instead of making the package 'head', remove this status from it: \"unhead\"."
 		)
 
-		namepace = parser.parse_args(toparser[2:])
+		namespace = parser.parse_args(toparser[2:])
 
-	return namepace
+	return namespace
 
 def main():
 	# build command help
@@ -212,6 +222,7 @@ def main():
 
 	if command == 'i' or command == 'install':
 		if not args.name:
+			return
 			dmtree.install_tree(dev=args.dev)
 		else:
 			# install
