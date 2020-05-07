@@ -69,7 +69,7 @@ def getpackinfo(package_name: str) -> Dict[str, str]:
 
 	return info
 
-def listpacks() -> [str, str]:
+def listpacks(all: bool=False) -> [str, str]:
 	"""
 	List all installed pack in this environment.
 
@@ -77,7 +77,10 @@ def listpacks() -> [str, str]:
 	:rtype: [str, str]
 	"""
 	# execute command
-	proc = subprocess.Popen(['pip', 'freeze'], stdout=subprocess.PIPE)
+	command = ['pip', 'freeze']
+	if all:
+		command.append('--all')
+	proc = subprocess.Popen(command, stdout=subprocess.PIPE)
 	proc.wait()
 
 	# process returned data
