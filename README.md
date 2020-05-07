@@ -2,10 +2,15 @@
 to installl a package from a local path
 pip install -e PATH
 https://pythonhosted.org/an_example_pypi_project/sphinx.html
+
+How to Upload to Pypi:
+python setup.py sdist bdist_wheel
+twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+twine upload dist/*
 -->
 
 # Dependency Manager
-[![current](https://img.shields.io/badge/version-1.0.0rc0-brightgreen.svg)](https://pypi.org/project/simplestRPC/) :green_heart:
+[![current](https://img.shields.io/badge/version-1.0.1rc0-brightgreen.svg)](https://pypi.org/project/simplestRPC/) :green_heart:
 [![license](https://img.shields.io/badge/license-zlib-brightgreen.svg)](https://www.zlib.net/zlib_license.html)
 [![python](https://img.shields.io/badge/python-3.6+-brightgreen.svg)](https://python.org)
 
@@ -37,29 +42,29 @@ python -m dependecymanager export
 
 ### Comands:
 ##### List
-|   Command     |                     Description                   |
-| ------------  | ------------------------------------------------  |
-|     init      | create DM environment tree from existente installed |
-| i - install   | Install the project or an specific dependecy  |
-| u - uninstall | Uninstall required package and its dependency. Maintaining possible cross dependencies with other packages, moving them if necessary, and updating the tree.  |
-|   f - info    | Get info about the requested pack.  |
-|   m - move    | Move package between environments, production for developer and vice versa. |
-| mh - makehead | Make the given package head. That is, the project is now directly dependent on this package.  |
-| ex - export   | Export requirements files. |
+| Command       | Description                                                                                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| init          | create DM environment tree from existente installed                                                                                                          |
+| i - install   | Install the project or an specific dependecy                                                                                                                 |
+| u - uninstall | Uninstall required package and its dependency. Maintaining possible cross dependencies with other packages, moving them if necessary, and updating the tree. |
+| f - info      | Get info about the requested pack.                                                                                                                           |
+| m - move      | Move package between environments, production for developer and vice versa.                                                                                  |
+| mh - makehead | Make the given package head. That is, the project is now directly dependent on this package.                                                                 |
+| ex - export   | Export requirements files.                                                                                                                                   |
 
 ##### Flags
-| Command  |      Flag     |        Description        |
-| -------- | ------------- | ------------------------- |
-| install  | with no flag | install the dev or prod tree: *according to --dev flag*. |
-| install  |   -n --name   | name of the package to install. |
-| install  | -v --version  | version to install. leave empty for latest. |
-| install  |    -d --dev   | Install as dev dependency? **Default is False**. |
-| uninstall|   -n --name   | name of the package to uninstall. |
-|   info   |   -n --name   | name of the package to get info. |
-|   info   |   -e --extra  | Brings all information available about the package, including disponible versions. |
-|   move   |   -n --name   | name of the package to move. |
-| makehead |   -n --name   | name of the package to make head. |
-| makehead |  -rm --remove | "Undead" the given pack, removing the 'head' status from it. **Default is False**. |
+| Command   | Flag         | Description                                                                        |
+| --------- | ------------ | ---------------------------------------------------------------------------------- |
+| install   | with no flag | install the dev or prod tree: *according to --dev flag*.                           |
+| install   | -n --name    | name of the package to install.                                                    |
+| install   | -v --version | version to install. leave empty for latest.                                        |
+| install   | -d --dev     | Install as dev dependency? **Default is False**.                                   |
+| uninstall | -n --name    | name of the package to uninstall.                                                  |
+| info      | -n --name    | name of the package to get info.                                                   |
+| info      | -e --extra   | Brings all information available about the package, including disponible versions. |
+| move      | -n --name    | name of the package to move.                                                       |
+| makehead  | -n --name    | name of the package to make head.                                                  |
+| makehead  | -rm --remove | "Undead" the given pack, removing the 'head' status from it. **Default is False**. |
 
 ### WARNING:
 As the package is still not fully released there are two things you might want to consider:

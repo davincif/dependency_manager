@@ -8,6 +8,7 @@ from .dmexceptions import TreeNotInitilized, PackageNotOnTree
 
 class DMTree:
 	__root = {}
+
 	prefix = './'
 	tree_file_name = "dmtree.json"
 	req_file_name = 'requirements.txt'
@@ -88,14 +89,27 @@ class DMTree:
 		self.export(dev=False)
 
 	def raise_tree(self, save=True):
+		"""
+		Search for all dependencies in the current environment and build the tree.
+
+		:param save: Should save the tree after the job? Default is True.
+		:type save: bool
+		"""
 		self.__root = {
 			'development': [],
 			'production': [],
 			'packs': {},
+			'pipdeps': [],
 		}
 
-		# puting all instaled pack in the tree
+		# getting all installed packs
 		pkglist = list(map(lambda x: x[0], dmutils.listpacks()))
+
+		# add pip dependencies
+		self.__root['pipdeps'] = list(map(lambda x: x[0], dmutils.listpacks(all=True)))
+		utils.list_remove_list(self.__root['pipdeps'], pkglist)
+
+		# puting all instaled pack in the tree
 		for pkg in pkglist:
 			# treate in case the package is local
 			pkg = pkg.split(' ')[0].strip()
@@ -453,6 +467,10 @@ class DMTree:
 		:param dev: if the package is a development or production package.
 		:type dev: bool
 		"""
+		# avoid pipdeps in other packages
+		utils.list_remove_list(requires, self.__root['pipdeps'])
+
+		# instert on tree
 		self.__root['packs'][name] = {
 			'head': True if not required_by else False,
 			'version': version,
@@ -473,7 +491,6 @@ class DMTree:
 				self.__root['development'].append(dep)
 			else:
 				self.__root['production'].append(dep)
-
 
 	# Getters and Setters
 	@property
