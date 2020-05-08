@@ -222,7 +222,6 @@ def main():
 
 	if command == 'i' or command == 'install':
 		if not args.name:
-			return
 			dmtree.install_tree(dev=args.dev)
 		else:
 			# install
