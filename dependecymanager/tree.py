@@ -165,7 +165,7 @@ class DMTree:
 		for dep in tree2add:
 			dependencies.append((dep, self.__root['packs'][dep]['version']))
 
-		req_str = "\n".join(map(lambda t: "{}={}".format(t[0], t[1]), dependencies))
+		req_str = "\n".join(map(lambda t: "{}=={}".format(t[0], t[1]), dependencies))
 
 		if dev:
 			with open(self.dev_req_file_name, 'w') as req_file:
@@ -325,6 +325,11 @@ class DMTree:
 		# if I'm going dev, no father should be prod.
 		sontree = self.get_dependency_list(packname)
 		sontree.remove(packname)
+
+		# update dev/prod condition
+		self.__root['packs'][packname]['dev'] = dev
+
+		# the rules are different to move it to one side or the other
 		if dev:
 			fathertree = self.get_ascendency_list(packname)
 			fathertree.remove(packname)
@@ -332,10 +337,6 @@ class DMTree:
 				# cant move requested pack
 				if not self.__root['packs'][father]['dev']:
 					raise Exception("Some other package in the production need this package!")
-
-
-			# update dev/prod condition
-			self.__root['packs'][packname]['dev'] = dev
 
 			# check if any son needs to be updated
 			for son in sontree:
@@ -345,7 +346,7 @@ class DMTree:
 
 				change = True
 				for required in self.__root['packs'][son]['required-by']:
-					if not self.__root['packs'][required]['dev']:
+					if required not in sontree and not self.__root['packs'][required]['dev']:
 						change = False
 						break
 				if change:

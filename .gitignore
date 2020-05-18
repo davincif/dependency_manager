@@ -11,9 +11,9 @@ __pycache__
 trash/
 
 # Dependency Manager Stuff
-dependecy_manager/*dmtree.json
-dependecy_manager/*requirements.txt
-dependecy_manager/*dev_requirements.txt
+dependecymanager/dmtree.json
+dependecymanager/requirements.txt
+dependecymanager/dev_requirements.txt
 
 # pypi
 *.egg-info
