@@ -113,7 +113,11 @@ class DMTree:
 		for pkg in pkglist:
 			# treate in case the package is local
 			pkg = pkg.split(' ')[0].strip()
+			if pkg.lower() == '-e':
+				continue
 			pkginfo = dmutils.getpackinfo(pkg)
+			if not pkginfo:
+				continue
 
 			# add pack to tree
 			self.__insertpack(pkginfo['name'], pkginfo['version'], pkginfo['requires'], pkginfo['required-by'], False)
@@ -242,8 +246,6 @@ class DMTree:
 		# add dependencies
 		if self.__root['packs'][packname]['requires']:
 			self.__add_dependencies(packname, dev=dev)
-
-		# update in dev or prod (whoever was choosen)
 
 		# save
 		self.__sort_dep()
@@ -440,11 +442,7 @@ class DMTree:
 		# add pack dependency
 		for req in self.__root['packs'][pack]['requires']:
 			# check if dependency already exists
-			if req in self.__root['packs'][pack]:
-				# treat dev/prod dependency
-				if not self.__root['packs'][pack]['dev'] and self.__root['packs'][pack]['dev']:
-					self.__root['packs'][pack]['dev'] = False
-			else:
+			if req not in self.__root['packs']:
 				# insert pack
 				packinfo = dmutils.getpackinfo(req)
 				self.__insertpack(req, packinfo['version'], packinfo['requires'], packinfo['required-by'], dev)
@@ -468,7 +466,7 @@ class DMTree:
 		:param dev: if the package is a development or production package.
 		:type dev: bool
 		"""
-		# avoid pipdeps in other packages
+		# avoid pip dependencies in other packages
 		utils.list_remove_list(requires, self.__root['pipdeps'])
 
 		# instert on tree

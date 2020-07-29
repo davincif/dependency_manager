@@ -11,9 +11,11 @@ twine upload dist/*
 -->
 
 # Dependency Manager
-[![current](https://img.shields.io/badge/version-1.0.1rc3-brightgreen.svg)](https://pypi.org/project/simplestRPC/) :green_heart:
+[![current](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](https://pypi.org/project/simplestRPC/) :green_heart:
 [![license](https://img.shields.io/badge/license-zlib-brightgreen.svg)](https://www.zlib.net/zlib_license.html)
 [![python](https://img.shields.io/badge/python-3.6+-brightgreen.svg)](https://python.org)
+
+##### :heart_eyes: **First full released version is finally here!** :heart_eyes:
 
 Dependency Manager comes to resolve the lack of a **good development/production dependency management** in python pip daily use.
 
@@ -72,6 +74,8 @@ As the package is still not fully released there are two things you might want t
 
 - Dependency Manager **still does not supports locally installed packages**. It's a rare but possible case of use for pip. So if you, for any reason, need to deal with this kind of approach in your project, Dependency Manager is still not the tool for you. Although adding such support is fairly easy from the point we are, and **this will be present in a future full release version**.
 - The package **craetes 3 files** in you'r current directory: **dmtree.json, requirements.txt and dev_requirements.txt**. **There's still not how to custom these names**, Although adding such feature is fairly easy too, and **will be present in a future full release**.
+
+##### see the [release note](./release_note.md) here.
 
 
 ##### See also

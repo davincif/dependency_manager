@@ -85,16 +85,18 @@ def listpacks(all: bool=False) -> [str, str]:
 
 	# process returned data
 	lines = proc.stdout.read().decode('utf8')
-	lines = list(filter(
-		lambda inf: inf[0],
-		map(
-			lambda inf: list(map(
-				lambda x: x.lower().strip(),
-				inf.split('==')
-				)),
-			lines.split('\n')
+	lines = list(
+		filter(
+			lambda inf: inf[0] and inf[0].split(' ')[0].lower() != '-e',
+			map(
+				lambda inf: list(map(
+					lambda x: x.lower().strip(),
+					inf.split('==')
+					)),
+				lines.split('\n')
+			)
 		)
-	))
+	)
 
 	return lines
 
